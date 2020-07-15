@@ -8,7 +8,7 @@ from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User
+from models import db, User, Item
 #from models import Person
 
 app = Flask(__name__)
@@ -38,6 +38,49 @@ def handle_hello():
     }
 
     return jsonify(response_body), 200
+
+# items routes methods
+@app.route('/items', methods=['POST', 'GET'])
+@app.route('/items/<item_id>', methods=['DELETE', 'PUT'])
+def handle_items(item_id=0):
+    headers = {
+        "Content-Type": "application/json"
+    }
+
+    if request.method == "POST":
+        print("creating item")
+        item = request.json
+        print(request.json)
+        new_item = Item(item["code"], item["name"], item["price"], item["category"])
+        db.session.add(new_item)
+        db.session.commit()
+        response_body = {
+            "status": "HTTP_200_OK. Ok"
+        }
+        status_code = 200
+
+    elif request.method == "GET":
+        user_item_list = Item.query.all()
+        response_body = []
+        for item in user_item_list:
+            response_body.append(item.serialize())
+        status_code = 200
+
+    elif request.method == "DELETE":
+        Item.query.filter_by(id=item_id).delete()
+        db.session.commit()
+        response_body = {
+            "result": "ok",
+            "status": "HTTP_204_NO_CONTENT. User and tasks deleted."
+        }
+        status_code = 204
+
+    
+    return make_response(
+        json.dumps(response_body),
+        status_code,
+        headers
+    )
 
 # this only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':
